@@ -1,6 +1,6 @@
 import type { HistoryResponse, SendMessageResponse } from './types'
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001'
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001'
 
 async function fetchJson<T>(input: RequestInfo | URL, init?: RequestInit) {
   const res = await fetch(input, init)
@@ -56,4 +56,24 @@ export async function sendMessage(args: {
       sessionId: args.sessionId
     })
   })
+}
+
+export async function waitForBackend(maxWaitMs = 90_000): Promise<void> {
+  const start = Date.now()
+  const healthUrl = `${API_BASE_URL}/api/v1/health`
+  let delay = 500
+
+  while (Date.now() - start < maxWaitMs) {
+    try {
+      const resp = await fetch(healthUrl, {
+        signal: AbortSignal.timeout(3000)
+      })
+      if (resp.ok) return
+    } catch {}
+
+    await new Promise(r => setTimeout(r, delay))
+    delay = Math.min(delay * 1.5, 4000)
+  }
+
+  throw new Error('Backend unavailable')
 }

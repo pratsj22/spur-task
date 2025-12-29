@@ -1,7 +1,32 @@
 
 import ChatWidget from './chat/ChatWidget'
+import { useEffect, useState } from 'react'
+import { waitForBackend } from './chat/api'
+
+function StartupLoader() {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white backdrop-blur">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-300 border-t-zinc-900" />
+        <div className="text-sm text-zinc-600">Waking up support…</div>
+      </div>
+    </div>
+  )
+}
 
 function App() {
+  const [backendReady, setBackendReady] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    waitForBackend(90_000).then(() => {
+      if (active) setBackendReady(true)
+    })
+    return () => { active = false }
+  }, [])
+
+  if (!backendReady) return <StartupLoader />
+
   return (
     <>
       <div className="relative h-screen overflow-hidden bg-zinc-50 text-zinc-900">
